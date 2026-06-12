@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="サイトガイド">
+<title>便利なサイトガイド</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f4; --bg3: #eeece9;
+    --bg-info: #e6f1fb; --bg-success: #eaf3de; --bg-danger: #fcebeb;
+    --text: #1a1a1a; --text2: #6b6b6b; --text3: #a0a0a0;
+    --text-info: #0c447c; --text-success: #27500a; --text-danger: #a32d2d;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius-md: 8px; --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --bg-info: #042c53; --bg-success: #173404; --bg-danger: #501313;
+      --text: #f2f2f2; --text2: #a0a0a0; --text3: #6b6b6b;
+      --text-info: #85b7eb; --text-success: #97c459; --text-danger: #f09595;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+    }
+  }
+  html, body { height: 100%; background: var(--bg3); font-family: var(--font); color: var(--text); }
+  .app { max-width: 600px; margin: 0 auto; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+  .header { padding: 1rem 1rem 0; background: var(--bg); border-bottom: 0.5px solid var(--border); }
+  .header-top { display: flex; align-items: center; gap: 8px; margin-bottom: .75rem; }
+  .header-top h1 { font-size: 17px; font-weight: 600; color: var(--text); flex: 1; }
+  .mode-badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: var(--bg-success); color: var(--text-success); white-space: nowrap; }
+  .mode-badge.info { background: var(--bg-info); color: var(--text-info); }
+  .mode-badge.warn { background: #faeeda; color: #633806; }
+  .tabs { display: flex; }
+  .tab-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--font); border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+  .content { flex: 1; padding: 1rem; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  input[type=text], select {
+    font-family: var(--font); font-size: 14px; height: 40px; width: 100%;
+    border: 0.5px solid var(--border2); border-radius: var(--radius-md);
+    background: var(--bg); color: var(--text); padding: 0 12px; outline: none; -webkit-appearance: none;
+  }
+  input[type=text]:focus, select:focus { border-color: var(--text3); box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; font-size: 14px; font-family: var(--font); border: 0.5px solid var(--border2); border-radius: var(--radius-md); background: var(--bg); color: var(--text); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .btn:active { opacity: .75; }
+  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn.sm { height: 34px; font-size: 13px; padding: 0 12px; }
+  .btn.icon { width: 34px; height: 34px; padding: 0; border: none; background: none; color: var(--text2); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row .flex { flex: 1; min-width: 0; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; margin-bottom: .875rem; }
+  .sec-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .75rem; }
+  .status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+  .status.ok { background: var(--bg-success); color: var(--text-success); }
+  .status.err { background: var(--bg-danger); color: var(--text-danger); }
+  .status.info { background: var(--bg-info); color: var(--text-info); }
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: .875rem; }
+  .filter-btn { height: 30px; padding: 0 13px; font-size: 12px; font-family: var(--font); border: 0.5px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .search-row { display: flex; gap: 8px; margin-bottom: .875rem; }
+  .search-row input { flex: 1; }
+  .cat-section { margin-bottom: .875rem; }
+  .cat-header { display: flex; align-items: center; gap: 8px; padding: .375rem 0; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .cat-chevron { width: 16px; height: 16px; color: var(--text3); transition: transform .18s; flex-shrink: 0; }
+  .cat-chevron.open { transform: rotate(90deg); }
+  .cat-label-txt { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; flex: 1; }
+  .cat-count { font-size: 11px; color: var(--text3); background: var(--bg2); border: 0.5px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+  .site-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+  .fav { width: 22px; height: 22px; border-radius: 5px; background: var(--bg2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+  .fav img { width: 22px; height: 22px; object-fit: contain; }
+  .sinfo { flex: 1; min-width: 0; }
+  .sname { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .surl { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .sacts { display: flex; gap: 2px; flex-shrink: 0; }
+  .sact-btn { width: 32px; height: 32px; border: none; background: none; color: var(--text2); border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .sact-btn:active { background: var(--bg2); }
+  .pills-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 999px; font-size: 12px; color: var(--text2); }
+  .pill-del { border: none; background: none; color: var(--text3); cursor: pointer; padding: 0; display: flex; align-items: center; line-height: 1; }
+  .radio-label { display: flex; align-items: flex-start; gap: 10px; padding: .75rem 0; cursor: pointer; border-bottom: 0.5px solid var(--border); font-size: 14px; color: var(--text); }
+  .radio-label:last-child { border-bottom: none; }
+  .radio-label input[type=radio] { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; accent-color: var(--text); }
+  .radio-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1rem 0; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; line-height: 2; }
+  .icon { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; vertical-align: -3px; }
+  .icon-lg { width: 22px; height: 22px; }
+  .icon-sm { width: 16px; height: 16px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <h1>便利なサイトガイド</h1>
+      <span class="mode-badge" id="mode-badge">個人</span>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('main')">一覧</button>
+      <button class="tab-btn" onclick="switchTab('add')">追加</button>
+      <button class="tab-btn" onclick="switchTab('settings')">設定</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- 一覧 -->
+    <div id="tab-main" class="panel active">
+      <div class="search-row">
+        <input type="text" id="search" placeholder="サイト名・URLで検索…" oninput="render()" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="btn sm" onclick="loadData(true)" aria-label="更新">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+      <div class="filter-bar" id="filter-bar"></div>
+      <div id="site-list"></div>
+    </div>
+
+    <!-- 追加 -->
+    <div id="tab-add" class="panel">
+      <div class="card">
+        <p class="sec-label">新しいサイトを追加</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input type="text" id="f-name" placeholder="サイト名（例：国土交通省）" maxlength="60" autocomplete="off">
+          <input type="text" id="f-url" placeholder="URL（例：https://www.mlit.go.jp）" autocomplete="off" autocorrect="off" autocapitalize="none">
+          <select id="f-cat"></select>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn primary" onclick="addSite()">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="add-status" style="margin-bottom:.75rem"></div>
+      <hr class="divider">
+      <p class="sec-label">カテゴリ管理</p>
+      <div class="row" style="margin-bottom:.75rem">
+        <input type="text" id="new-cat" placeholder="新しいカテゴリ名" maxlength="30" class="flex" autocomplete="off">
+        <button class="btn sm" onclick="addCategory()">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          追加
+        </button>
+      </div>
+      <div class="pills-wrap" id="cat-pills"></div>
+    </div>
+
+    <!-- 設定 -->
+    <div id="tab-settings" class="panel">
+      <div class="card">
+        <p class="sec-label">モード選択</p>
+        <label class="radio-label">
+          <input type="radio" name="mode" value="local" id="mode-local" onchange="changeMode('local')">
+          <div>個人モード<div class="radio-desc">このデバイスのみ保存。ログイン不要。</div></div>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="mode" value="shared" id="mode-shared" onchange="changeMode('shared')">
+          <div>共有モード<div class="radio-desc">共有コードで複数デバイス・複数人がリアルタイム同期。</div></div>
+        </label>
+      </div>
+
+      <div id="shared-settings" style="display:none">
+        <div class="card">
+          <p class="sec-label">共有コード</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:.75rem">同じコードを入力した全員がリストをリアルタイムで共有・編集できます</p>
+          <div class="row" style="margin-bottom:.875rem">
+            <input type="text" id="share-code" placeholder="共有コード（任意の文字列）" class="flex" autocomplete="off" autocorrect="off" autocapitalize="none">
+            <button class="btn icon" onclick="genCode()" aria-label="自動生成">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" onclick="connectShared()">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+              接続
+            </button>
+            <button class="btn sm" onclick="copyCode()">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              コードをコピー
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-status" style="margin-bottom:.75rem"></div>
+
+      <div class="card">
+        <p class="sec-label">接続状態</p>
+        <div id="conn-info" style="font-size:13px;color:var(--text2)">個人モード（このデバイスのみ）</div>
+      </div>
+
+      <div class="card" style="margin-top:.875rem">
+        <p class="sec-label">データ</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" onclick="exportData()">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            エクスポート
+          </button>
+          <label class="btn sm" style="cursor:pointer">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            インポート
+            <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBveaEaUf5oJpLqH3UqxbAqQ8Xcq0tyg8c",
+  authDomain: "siteguide-7739f.firebaseapp.com",
+  databaseURL: "https://siteguide-7739f-default-rtdb.firebaseio.com",
+  projectId: "siteguide-7739f",
+  storageBucket: "siteguide-7739f.firebasestorage.app",
+  messagingSenderId: "324852105450",
+  appId: "1:324852105450:web:e4c4419c85ce83e8d35793"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window._fb = { ref, set, onValue, off, db };
+
+const LKEY = 'benri-v3';
+let state = { mode:'local', shareCode:'', categories:['仕事','情報収集','ツール','その他'], sites:[], collapsed:{} };
+let activeFilter = 'すべて';
+let unsubscribe = null;
+
+function loadLocal() {
+  try { const r = localStorage.getItem(LKEY); if (r) state = Object.assign(state, JSON.parse(r)); } catch(e) {}
+}
+function saveLocal() {
+  try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch(e) {}
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function showStatus(id, msg, type, duration) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<span class="status ${type}">${msg}</span>`;
+  if (duration !== 0) setTimeout(() => { el.innerHTML = ''; }, duration || 3000);
+}
+
+window.switchTab = function(t) {
+  ['main','add','settings'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('active', n===t);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['main','add','settings'][i]===t);
+  });
+  if (t==='add') populateCatSelect();
+  if (t==='settings') renderSettings();
+};
+
+function updateBadge(txt, type) {
+  const b = document.getElementById('mode-badge');
+  b.textContent = txt;
+  b.className = 'mode-badge' + (type ? ' '+type : '');
+}
+function updateConnInfo() {
+  document.getElementById('conn-info').textContent =
+    state.mode==='local' ? '個人モード（このデバイスのみ保存）' : `共有モード — コード: ${state.shareCode}`;
+}
+
+window.changeMode = function(m) {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  state.mode = m;
+  saveLocal();
+  document.getElementById('shared-settings').style.display = m==='shared' ? 'block' : 'none';
+  if (m==='local') { updateBadge('個人', ''); updateConnInfo(); render(); }
+};
+
+window.genCode = function() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let code = '';
+  for (let i=0; i<8; i++) code += chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('share-code').value = code;
+};
+
+window.copyCode = function() {
+  const v = document.getElementById('share-code').value.trim();
+  if (!v) { showStatus('settings-status','コードを入力してください','err'); return; }
+  navigator.clipboard.writeText(v)
+    .then(() => showStatus('settings-status','コードをコピーしました','ok'))
+    .catch(() => showStatus('settings-status','コピーできませんでした','err'));
+};
+
+window.connectShared = function() {
+  const code = document.getElementById('share-code').value.trim();
+  if (!code) { showStatus('settings-status','共有コードを入力してください','err'); return; }
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  state.shareCode = code;
+  state.mode = 'shared';
+  saveLocal();
+  showStatus('settings-status','接続中…','info', 0);
+  subscribeFirebase(code);
+  updateBadge('共有: '+code, 'info');
+  updateConnInfo();
+  showStatus('settings-status','接続しました','ok');
+};
+
+function subscribeFirebase(code) {
+  const dbRef = ref(db, 'guides/' + code);
+  const handler = onValue(dbRef, snapshot => {
+    const d = snapshot.val();
+    if (d) {
+      state.sites = d.sites || [];
+      state.categories = d.categories || state.categories;
+      saveLocal();
+      render();
+    }
+  });
+  unsubscribe = () => off(dbRef, 'value', handler);
+}
+
+async function saveToFirebase() {
+  if (state.mode !== 'shared' || !state.shareCode) return;
+  try {
+    await set(ref(db, 'guides/' + state.shareCode), {
+      sites: state.sites,
+      categories: state.categories
+    });
+  } catch(e) { console.error(e); }
+}
+
+window.loadData = function(manual) {
+  if (manual && state.mode === 'shared' && state.shareCode) {
+    showStatus('', '', '');
+  }
+  render();
+};
+
+function renderSettings() {
+  document.getElementById(state.mode==='local' ? 'mode-local' : 'mode-shared').checked = true;
+  document.getElementById('shared-settings').style.display = state.mode==='shared' ? 'block' : 'none';
+  if (state.shareCode) document.getElementById('share-code').value = state.shareCode;
+  updateConnInfo();
+}
+
+function faviconUrl(url) {
+  try { return `https://www.google.com/s2/favicons?sz=32&domain=${new URL(url).hostname}`; }
+  catch(e) { return ''; }
+}
+
+function populateCatSelect() {
+  const s = document.getElementById('f-cat');
+  if (!s) return;
+  s.innerHTML = state.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+window.addSite = async function() {
+  const name = document.getElementById('f-name').value.trim();
+  const url  = document.getElementById('f-url').value.trim();
+  const cat  = document.getElementById('f-cat').value;
+  if (!name || !url) { showStatus('add-status','サイト名とURLを入力してください','err'); return; }
+  let u = url;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  state.sites.push({ id: Date.now(), name, url: u, cat });
+  saveLocal();
+  await saveToFirebase();
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-url').value  = '';
+  showStatus('add-status','保存しました','ok');
+  render();
+};
+
+window.deleteSite = async function(id) {
+  if (!confirm('このサイトを削除しますか？')) return;
+  state.sites = state.sites.filter(s => s.id !== id);
+  saveLocal();
+  await saveToFirebase();
+  render();
+};
+
+window.addCategory = async function() {
+  const v = document.getElementById('new-cat').value.trim();
+  if (!v) return;
+  if (state.categories.includes(v)) { alert('同じカテゴリが既にあります'); return; }
+  state.categories.push(v);
+  document.getElementById('new-cat').value = '';
+  saveLocal();
+  await saveToFirebase();
+  renderCatPills();
+  populateCatSelect();
+};
+
+window.removeCategory = async function(cat) {
+  if (state.sites.some(s => s.cat === cat)) {
+    if (!confirm(`「${cat}」のサイトを「その他」に移動して削除しますか？`)) return;
+    state.sites = state.sites.map(s => s.cat===cat ? {...s, cat:'その他'} : s);
+  }
+  state.categories = state.categories.filter(c => c !== cat);
+  if (!state.categories.includes('その他')) state.categories.push('その他');
+  saveLocal();
+  await saveToFirebase();
+  renderCatPills();
+  populateCatSelect();
+  render();
+};
+
+function renderCatPills() {
+  const el = document.getElementById('cat-pills');
+  if (!el) return;
+  el.innerHTML = state.categories.map(c =>
+    `<span class="pill">${esc(c)}<button class="pill-del" onclick="removeCategory('${esc(c)}')" aria-label="${esc(c)}を削除">
+      <svg style="width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button></span>`
+  ).join('');
+}
+
+window.toggleCollapse = function(cat) {
+  state.collapsed[cat] = !state.collapsed[cat];
+  saveLocal(); render();
+};
+
+window.setFilter = function(cat) { activeFilter = cat; render(); };
+
+function render() {
+  const q = (document.getElementById('search') || {}).value || '';
+  const ql = q.toLowerCase();
+
+  const fb = document.getElementById('filter-bar');
+  if (fb) {
+    fb.innerHTML = ['すべて', ...state.categories].map(c =>
+      `<button class="filter-btn${activeFilter===c?' active':''}" onclick="setFilter('${esc(c)}')">${esc(c)}</button>`
+    ).join('');
+  }
+
+  let sites = state.sites;
+  if (ql) sites = sites.filter(s => s.name.toLowerCase().includes(ql) || s.url.toLowerCase().includes(ql));
+  if (activeFilter !== 'すべて') sites = sites.filter(s => s.cat === activeFilter);
+
+  const list = document.getElementById('site-list');
+  if (!list) return;
+
+  if (state.sites.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <svg style="width:32px;height:32px;stroke:var(--text3);fill:none;display:block;margin:0 auto .75rem" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      まだサイトがありません<br><span style="font-size:12px">「追加」タブから登録してください</span>
+    </div>`;
+    return;
+  }
+
+  const cats = activeFilter === 'すべて' ? state.categories : [activeFilter];
+  let html = '';
+  cats.forEach(cat => {
+    const items = sites.filter(s => s.cat === cat);
+    const col = state.collapsed[cat];
+    html += `<div class="cat-section">
+      <div class="cat-header" onclick="toggleCollapse('${esc(cat)}')">
+        <svg class="cat-chevron${col?'':' open'}" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="cat-label-txt">${esc(cat)}</span>
+        <span class="cat-count">${items.length}</span>
+      </div>`;
+    if (!col) {
+      if (items.length === 0) {
+        html += `<p style="font-size:13px;color:var(--text3);padding:.25rem 0 .5rem 1.5rem">サイトなし</p>`;
+      } else {
+        items.forEach(s => {
+          const fv = faviconUrl(s.url);
+          html += `<div class="site-card">
+            <div class="fav">${fv ? `<img src="${fv}" alt="" onerror="this.style.display='none'">` : ''}</div>
+            <div class="sinfo"><div class="sname">${esc(s.name)}</div><div class="surl">${esc(s.url)}</div></div>
+            <div class="sacts">
+              <a class="sact-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.name)}を開く">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+              <button class="sact-btn" onclick="deleteSite(${s.id})" aria-label="${esc(s.name)}を削除">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+          </div>`;
+        });
+      }
+    }
+    html += `</div>`;
+  });
+  list.innerHTML = html;
+  renderCatPills();
+}
+
+window.exportData = function() {
+  const json = JSON.stringify({ sites: state.sites, categories: state.categories }, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'benri-site-guide-backup.json';
+  a.click();
+};
+
+window.importData = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.sites) state.sites = d.sites;
+      if (d.categories) state.categories = d.categories;
+      saveLocal();
+      await saveToFirebase();
+      render();
+      showStatus('settings-status','インポートしました','ok');
+    } catch(err) {
+      showStatus('settings-status','ファイルを読み込めませんでした','err');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+};
+
+// 初期化
+loadLocal();
+if (state.mode === 'local') updateBadge('個人', '');
+else if (state.shareCode) {
+  updateBadge('共有: ' + state.shareCode, 'info');
+  subscribeFirebase(state.shareCode);
+}
+render();
+</script>
+</body>
+</html>
