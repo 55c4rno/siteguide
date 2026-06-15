@@ -16,6 +16,7 @@
     --text-info: #0c447c; --text-success: #27500a; --text-danger: #a32d2d;
     --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
     --radius-md: 8px; --radius-lg: 12px;
+    --star: #f5a623;
     --font: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,9 +35,8 @@
   .header-top h1 { font-size: 17px; font-weight: 600; color: var(--text); flex: 1; }
   .mode-badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: var(--bg-success); color: var(--text-success); white-space: nowrap; }
   .mode-badge.info { background: var(--bg-info); color: var(--text-info); }
-  .mode-badge.warn { background: #faeeda; color: #633806; }
   .tabs { display: flex; }
-  .tab-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--font); border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+  .tab-btn { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--font); border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; -webkit-tap-highlight-color: transparent; }
   .tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
   .content { flex: 1; padding: 1rem; }
   .panel { display: none; }
@@ -81,6 +81,9 @@
   .sacts { display: flex; gap: 2px; flex-shrink: 0; }
   .sact-btn { width: 32px; height: 32px; border: none; background: none; color: var(--text2); border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; -webkit-tap-highlight-color: transparent; }
   .sact-btn:active { background: var(--bg2); }
+  .star-btn { width: 32px; height: 32px; border: none; background: none; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; color: var(--text3); font-size: 18px; line-height: 1; }
+  .star-btn.starred { color: var(--star); }
+  .star-btn:active { background: var(--bg2); }
   .pills-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
   .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 999px; font-size: 12px; color: var(--text2); }
   .pill-del { border: none; background: none; color: var(--text3); cursor: pointer; padding: 0; display: flex; align-items: center; line-height: 1; }
@@ -93,8 +96,9 @@
   .icon { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; vertical-align: -3px; }
   .icon-lg { width: 22px; height: 22px; }
   .icon-sm { width: 16px; height: 16px; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .bm-header { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+  .bm-header h2 { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+  .bm-count { font-size: 12px; color: var(--text3); background: var(--bg2); border: 0.5px solid var(--border); border-radius: 999px; padding: 2px 10px; }
 </style>
 </head>
 <body>
@@ -107,12 +111,14 @@
     </div>
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('main')">一覧</button>
+      <button class="tab-btn" onclick="switchTab('bookmark')">★ブックマーク</button>
       <button class="tab-btn" onclick="switchTab('add')">追加</button>
       <button class="tab-btn" onclick="switchTab('settings')">設定</button>
     </div>
   </div>
 
   <div class="content">
+
     <!-- 一覧 -->
     <div id="tab-main" class="panel active">
       <div class="search-row">
@@ -123,6 +129,15 @@
       </div>
       <div class="filter-bar" id="filter-bar"></div>
       <div id="site-list"></div>
+    </div>
+
+    <!-- ブックマーク -->
+    <div id="tab-bookmark" class="panel">
+      <div class="bm-header">
+        <h2>ブックマーク</h2>
+        <span class="bm-count" id="bm-count">0件</span>
+      </div>
+      <div id="bookmark-list"></div>
     </div>
 
     <!-- 追加 -->
@@ -213,10 +228,10 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -233,8 +248,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
-window._fb = { ref, set, onValue, off, db };
 
 const LKEY = 'benri-v3';
 let state = { mode:'local', shareCode:'', categories:['仕事','情報収集','ツール','その他'], sites:[], collapsed:{} };
@@ -253,19 +266,20 @@ function esc(s) {
 function showStatus(id, msg, type, duration) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = `<span class="status ${type}">${msg}</span>`;
-  if (duration !== 0) setTimeout(() => { el.innerHTML = ''; }, duration || 3000);
+  el.innerHTML = msg ? `<span class="status ${type}">${msg}</span>` : '';
+  if (msg && duration !== 0) setTimeout(() => { el.innerHTML = ''; }, duration || 3000);
 }
 
 window.switchTab = function(t) {
-  ['main','add','settings'].forEach(n => {
+  ['main','bookmark','add','settings'].forEach(n => {
     document.getElementById('tab-'+n).classList.toggle('active', n===t);
   });
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['main','add','settings'][i]===t);
+    b.classList.toggle('active', ['main','bookmark','add','settings'][i]===t);
   });
   if (t==='add') populateCatSelect();
   if (t==='settings') renderSettings();
+  if (t==='bookmark') renderBookmarks();
 };
 
 function updateBadge(txt, type) {
@@ -324,6 +338,7 @@ function subscribeFirebase(code) {
       state.categories = d.categories || state.categories;
       saveLocal();
       render();
+      renderBookmarks();
     }
   });
   unsubscribe = () => off(dbRef, 'value', handler);
@@ -339,12 +354,7 @@ async function saveToFirebase() {
   } catch(e) { console.error(e); }
 }
 
-window.loadData = function(manual) {
-  if (manual && state.mode === 'shared' && state.shareCode) {
-    showStatus('', '', '');
-  }
-  render();
-};
+window.loadData = function() { render(); renderBookmarks(); };
 
 function renderSettings() {
   document.getElementById(state.mode==='local' ? 'mode-local' : 'mode-shared').checked = true;
@@ -371,7 +381,7 @@ window.addSite = async function() {
   if (!name || !url) { showStatus('add-status','サイト名とURLを入力してください','err'); return; }
   let u = url;
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-  state.sites.push({ id: Date.now(), name, url: u, cat });
+  state.sites.push({ id: Date.now(), name, url: u, cat, starred: false });
   saveLocal();
   await saveToFirebase();
   document.getElementById('f-name').value = '';
@@ -386,6 +396,15 @@ window.deleteSite = async function(id) {
   saveLocal();
   await saveToFirebase();
   render();
+  renderBookmarks();
+};
+
+window.toggleStar = async function(id) {
+  state.sites = state.sites.map(s => s.id === id ? {...s, starred: !s.starred} : s);
+  saveLocal();
+  await saveToFirebase();
+  render();
+  renderBookmarks();
 };
 
 window.addCategory = async function() {
@@ -431,6 +450,40 @@ window.toggleCollapse = function(cat) {
 
 window.setFilter = function(cat) { activeFilter = cat; render(); };
 
+function siteCardHTML(s) {
+  const fv = faviconUrl(s.url);
+  return `<div class="site-card">
+    <div class="fav">${fv ? `<img src="${fv}" alt="" onerror="this.style.display='none'">` : ''}</div>
+    <div class="sinfo"><div class="sname">${esc(s.name)}</div><div class="surl">${esc(s.url)}</div></div>
+    <div class="sacts">
+      <button class="star-btn${s.starred?' starred':''}" onclick="toggleStar(${s.id})" aria-label="${s.starred?'ブックマーク解除':'ブックマーク追加'}" title="${s.starred?'★解除':'★追加'}">★</button>
+      <a class="sact-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.name)}を開く">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      <button class="sact-btn" onclick="deleteSite(${s.id})" aria-label="${esc(s.name)}を削除">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderBookmarks() {
+  const list = document.getElementById('bookmark-list');
+  const countEl = document.getElementById('bm-count');
+  if (!list) return;
+  const starred = state.sites.filter(s => s.starred);
+  if (countEl) countEl.textContent = `${starred.length}件`;
+  if (starred.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <div style="font-size:36px;margin-bottom:.5rem">★</div>
+      ブックマークがありません<br>
+      <span style="font-size:12px">一覧の★をタップして追加できます</span>
+    </div>`;
+    return;
+  }
+  list.innerHTML = starred.map(s => siteCardHTML(s)).join('');
+}
+
 function render() {
   const q = (document.getElementById('search') || {}).value || '';
   const ql = q.toLowerCase();
@@ -472,21 +525,7 @@ function render() {
       if (items.length === 0) {
         html += `<p style="font-size:13px;color:var(--text3);padding:.25rem 0 .5rem 1.5rem">サイトなし</p>`;
       } else {
-        items.forEach(s => {
-          const fv = faviconUrl(s.url);
-          html += `<div class="site-card">
-            <div class="fav">${fv ? `<img src="${fv}" alt="" onerror="this.style.display='none'">` : ''}</div>
-            <div class="sinfo"><div class="sname">${esc(s.name)}</div><div class="surl">${esc(s.url)}</div></div>
-            <div class="sacts">
-              <a class="sact-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.name)}を開く">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              </a>
-              <button class="sact-btn" onclick="deleteSite(${s.id})" aria-label="${esc(s.name)}を削除">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-              </button>
-            </div>
-          </div>`;
-        });
+        items.forEach(s => { html += siteCardHTML(s); });
       }
     }
     html += `</div>`;
@@ -516,6 +555,7 @@ window.importData = async function(e) {
       saveLocal();
       await saveToFirebase();
       render();
+      renderBookmarks();
       showStatus('settings-status','インポートしました','ok');
     } catch(err) {
       showStatus('settings-status','ファイルを読み込めませんでした','err');
@@ -533,6 +573,7 @@ else if (state.shareCode) {
   subscribeFirebase(state.shareCode);
 }
 render();
+renderBookmarks();
 </script>
 </body>
 </html>
